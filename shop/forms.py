@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Product, CartItem, Order, Payment, Customer, OrderItem
+
+from .models import CartItem, Customer, Order, OrderItem, Payment, Product
 
 
 # Formularz rejestracji nowego użytkownika
