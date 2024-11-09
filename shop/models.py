@@ -12,12 +12,28 @@ class Product(models.Model):
     def _str_(self):
         return self.name
     
+    def update_stock(self, quantity):
+        if self.stock >= quantity:
+            self.stock -= quantity
+            self.save()
+            return True
+        return False
+    
 class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=True)
+    customer = models.ForeignKey('Customer', related_name='orders', on_delete=models.CASCADE)
     
     def _str_(self):
         return f"Order {self.id}"
+    
+    def mark_as_paid(self):
+        self.paid = True
+        self.save()
+        
+    def get_total_price(self):
+        total = sum(item.get_total_price() for item in self.items.all())
+        return total
     
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
@@ -26,3 +42,38 @@ class OrderItem(models.Model):
     
     def get_total_price(self):
         return self.product.price * self.quantity    
+    
+class Customer(models.Model):
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField()
+    address = models.TextField()
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
+    def place_order(self, product_quantities):
+        order = Order.objects.create(customer=self)
+        for product, quantity in product_quantities.items():
+            product_instance = Product.objects.get(id=product)
+            if product_instance.update_stock(quantity):
+                OrderItem.objects.create(order=order, product=product_instance, quantity=quantity)
+            else:
+                raise ValueError(f"Product {product_instance.name} is not available in this quantity.")
+        return order
+
+
+class Payment(models.Model):
+    order = models.OneToOneField(Order, related_name="payment", on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    paid_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Payment for Order {self.order.id}"
+
+    def process_payment(self):
+        if self.amount >= self.order.get_total_price():
+            self.order.mark_as_paid()
+            self.save()
+            return True
+        return False
