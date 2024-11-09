@@ -1,0 +1,15 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+    <h2>{{ products.name }}</h2>
+    <p>{{ products.description }}</p>
+    <p><strong>Price:</strong> ${{ products.price }}</p>
+    <p><strong>Stock:</strong> {{ products.stock }}</p>
+
+    <form method="POST" action="{% url 'add_to_cart' products.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Add to Cart</button>
+    </form>
+
+    <a href="{% url 'product_list' %}" class="btn btn-secondary mt-3">Back to Product List</a>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+    <h2>Checkout</h2>
+    <h3>Order Summary</h3>
+    {% if cart.items.all %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart.items.all %}
+                    <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>${{ item.product.price }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="customer" class="form-label">Select Customer:</label>
+                <select name="customer_id" id="customer" class="form-select">
+                    {% for customer in customers %}
+                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Complete Order</button>
+        </form>
+    {% else %}
+        <p>Your cart is empty.</p>
+    {% endif %}
+{% endblock %}

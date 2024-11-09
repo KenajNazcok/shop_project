@@ -1,0 +1,24 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+    <h2>Create Order</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="customer" class="form-label">Select Customer:</label>
+            <select name="customer_id" id="customer" class="form-select">
+                {% for customer in customers %}
+                    <option value="{{ customer.id }}">{{ customer.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <h3>Select Products</h3>
+        {% for product in products %}
+            <div class="form-group">
+                <label>{{ product.name }} (Available: {{ product.stock }})</label>
+                <input type="number" name="{{ product.id }}" class="form-control" min="0" placeholder="Quantity">
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary mt-3">Create Order</button>
+    </form>
+{% endblock %}
