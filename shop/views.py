@@ -21,7 +21,7 @@ def user_register(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Registration successful. You can now log in.")
-            return redirect("user_login")  # Po rejestracji przekierowanie do logowania
+            return redirect("user_login")  
         else:
             messages.error(request, "There was an error during registration.")
     else:
@@ -42,7 +42,7 @@ def user_login(request):
                 messages.success(request, "Logged in successfully!")
                 return redirect(
                     "product_list"
-                )  # Po udanym logowaniu przekierowujemy do listy produktów
+                )  
             else:
                 messages.error(request, "Invalid username or password")
         else:
@@ -138,20 +138,15 @@ def create_order(request):
         customer_id = request.POST.get("customer_id")
         product_quantities = {}
 
-        # Sprawdzamy, czy użytkownik podał dane jako pojedyncze liczby lub listę
         try:
-            # Iterujemy przez wszystkie dane z formularza
             for product, quantity in request.POST.items():
-                # Sprawdzamy, czy klucz jest cyfrą (czy jest to ID produktu)
                 if product.isdigit():
                     product_id = int(product)
                     quantity = quantity.strip()
 
-                    # Sprawdzamy, czy ilość jest liczbą
                     if isinstance(quantity, str) and quantity.isdigit():
                         quantity = int(quantity)
 
-                    # Dodajemy do słownika, biorąc pod uwagę różne możliwe formaty
                     if isinstance(quantity, int):
                         product_quantities[product_id] = quantity
                     else:
@@ -165,7 +160,6 @@ def create_order(request):
         try:
             customer = Customer.objects.get(id=customer_id)
 
-            # Tworzymy zamówienie w transakcji
             with transaction.atomic():
                 order = customer.place_order(product_quantities)
 
@@ -197,24 +191,24 @@ def process_payment(request, order_id):
 @login_required
 def checkout(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
-    if request.method == "POST":
-        # Zbieramy dane o kliencie
-        customer_id = request.POST.get("customer_id")
-        customer = Customer.objects.get(id=customer_id)
 
-        # Tworzymy zamówienie
+    if request.method == "POST":
+        if not hasattr(request.user, 'customer'):
+            return HttpResponse("You must be assigned a customer profile.", status=400)
+        
+        customer = request.user.customer
+
         order = Order.objects.create(customer=customer)
 
-        # Tworzymy przedmioty w zamówieniu
         for item in cart.items.all():
             OrderItem.objects.create(
-                order=order, product=item.product, quantity=item.quantity
+                order=order, 
+                product=item.product, 
+                quantity=item.quantity
             )
-
-        # Zwalniamy koszyk
+        
         cart.items.all().delete()
+        
+        return redirect('order_detail', pk=order.id)
 
-        # Przekierowujemy do szczegółów zamówienia
-        return redirect("order_detail", pk=order.id)
-
-    return render(request, "shop/checkout.html", {"cart": cart})
+    return render(request, 'shop/checkout.html', {'cart': cart})
