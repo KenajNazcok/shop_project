@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from .models import CartItem, Customer, Order, OrderItem, Payment, Product
 
 
-# Formularz rejestracji nowego użytkownika
 class UserRegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
     password_confirm = forms.CharField(
@@ -30,7 +29,6 @@ class UserRegistrationForm(forms.ModelForm):
         return user
 
 
-# Formularz do tworzenia zamówienia
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
@@ -47,7 +45,6 @@ class OrderForm(forms.ModelForm):
         return order
 
 
-# Formularz do edytowania zamówienia
 class OrderEditForm(forms.ModelForm):
     class Meta:
         model = Order
@@ -62,7 +59,6 @@ class OrderEditForm(forms.ModelForm):
         return order
 
 
-# Formularz płatności
 class PaymentForm(forms.ModelForm):
     class Meta:
         model = Payment
@@ -75,7 +71,6 @@ class PaymentForm(forms.ModelForm):
         return amount
 
 
-# Formularz do adresu dostawy
 class DeliveryAddressForm(forms.ModelForm):
     class Meta:
         model = Customer
@@ -88,7 +83,6 @@ class DeliveryAddressForm(forms.ModelForm):
         return address
 
 
-# Formularz do edytowania produktów w koszyku
 class CartItemUpdateForm(forms.ModelForm):
     class Meta:
         model = CartItem
@@ -105,14 +99,12 @@ class CartItemUpdateForm(forms.ModelForm):
         return quantity
 
 
-# Formularz do dodawania produktu do koszyka
 class CartItemForm(forms.ModelForm):
     class Meta:
         model = CartItem
         fields = ["product", "quantity"]
 
 
-# Formularz dla produktu (dodawanie/edycja)
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product

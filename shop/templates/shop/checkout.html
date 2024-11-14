@@ -3,6 +3,7 @@
 {% block content %}
     <h2>Checkout</h2>
     <h3>Order Summary</h3>
+
     {% if cart.items.all %}
         <table class="table">
             <thead>
@@ -22,18 +23,18 @@
                 {% endfor %}
             </tbody>
         </table>
-        <form method="POST">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="customer" class="form-label">Select Customer:</label>
-                <select name="customer_id" id="customer" class="form-select">
-                    {% for customer in customers %}
-                        <option value="{{ customer.id }}">{{ customer.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Complete Order</button>
-        </form>
+
+        {% if user.is_authenticated %}
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <input type="hidden" name="customer_id" value="{{ user.customer.id }}">
+                </div>
+                <button type="submit" class="btn btn-primary">Complete Order</button>
+            </form>
+        {% else %}
+            <p>You must be logged in to complete the order.</p>
+        {% endif %}
     {% else %}
         <p>Your cart is empty.</p>
     {% endif %}

@@ -1,9 +1,8 @@
 from django.db import models
-
-# Create your models here.
-
+from django.contrib.auth.models import User
 
 class Customer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="customer", null=False, blank=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField()
@@ -11,20 +10,6 @@ class Customer(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
-
-    def place_order(self, product_quantities):
-        order = Order.objects.create(customer=self)
-        for product, quantity in product_quantities.items():
-            product_instance = Product.objects.get(id=product)
-            if product_instance.update_stock(quantity):
-                OrderItem.objects.create(
-                    order=order, product=product_instance, quantity=quantity
-                )
-            else:
-                raise ValueError(
-                    f"Product {product_instance.name} is not available in this quantity."
-                )
-        return order
 
 
 class Product(models.Model):
