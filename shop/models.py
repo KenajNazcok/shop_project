@@ -19,7 +19,7 @@ class Product(models.Model):
     stock = models.PositiveIntegerField()
     available = models.BooleanField(default=True)
 
-    def _str_(self):
+    def __str__(self):
         return self.name
 
     def update_stock(self, quantity):
@@ -73,12 +73,16 @@ class Payment(models.Model):
     def process_payment(self):
         if self.amount >= self.order.get_total_price():
             self.order.mark_as_paid()
+            # Zmniejszenie stanu magazynowego dla każdego produktu w zamówieniu
+            for order_item in self.order.items.all():
+                order_item.product.update_stock(order_item.quantity)
             self.save()
             return True
         return False
 
 
-from django.contrib.auth.models import User
+
+
 
 
 class Cart(models.Model):

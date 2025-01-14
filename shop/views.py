@@ -59,20 +59,20 @@ def user_logout(request):
     return redirect("product_list")
 
 
-@login_required
+@login_required(login_url='/login/')
 def add_to_cart(request, product_id):
-    product = Product.objects.get(id=product_id)
-    cart, created = Cart.objects.get_or_create(user=request.user)
-
-    cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+    product = get_object_or_404(Product, id=product_id)  
+    cart, created = Cart.objects.get_or_create(user=request.user)  
+    
+    cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product) 
+    
     if not created:
-        cart_item.quantity += 1
-        cart_item.save()
+        cart_item.quantity += 1  
+        cart_item.save()  
 
-    return redirect("cart_detail")
+    return redirect("cart_detail")  
 
-
-@login_required
+@login_required(login_url='/login/')
 def cart_detail(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
     return render(request, "shop/cart_detail.html", {"cart": cart})
@@ -121,9 +121,9 @@ def delete_product(request, pk):
         return redirect("product_list")
     return render(request, "shop/delete_product.html", {"product": product})
 
-
+@login_required(login_url='/login/')
 def order_list(request):
-    orders = Order.objects.all()
+    orders = Order.objects.filter(customer=request.user.customer)
     return render(request, "shop/order_list.html", {"orders": orders})
 
 
@@ -134,46 +134,30 @@ def order_detail(request, pk):
 
 @login_required
 def create_order(request):
+    # Sprawdzamy, czy użytkownik ma koszyk
+    cart, created = Cart.objects.get_or_create(user=request.user)
+
     if request.method == "POST":
-        customer_id = request.POST.get("customer_id")
-        product_quantities = {}
-
-        try:
-            for product, quantity in request.POST.items():
-                if product.isdigit():
-                    product_id = int(product)
-                    quantity = quantity.strip()
-
-                    if isinstance(quantity, str) and quantity.isdigit():
-                        quantity = int(quantity)
-
-                    if isinstance(quantity, int):
-                        product_quantities[product_id] = quantity
-                    else:
-                        return HttpResponse(
-                            "Invalid input for product quantity.", status=400
-                        )
-
-        except ValueError:
-            return HttpResponse("Invalid input format.", status=400)
-
-        try:
-            customer = Customer.objects.get(id=customer_id)
-
-            with transaction.atomic():
-                order = customer.place_order(product_quantities)
-
-            return redirect("order_detail", pk=order.id)
-        except Customer.DoesNotExist:
-            return HttpResponse("Customer does not exist.", status=400)
+        # Tworzymy formularz na podstawie przesłanych danych
+        form = OrderForm(request.POST)
+        if form.is_valid():
+            customer = request.user.customer  # Zakładamy, że użytkownik ma przypisanego klienta
+            try:
+                # Tworzymy zamówienie i pozycje zamówienia
+                order = form.save_order(cart, customer)
+                
+                # Przekierowujemy użytkownika do szczegółów zamówienia
+                return redirect('order_detail', pk=order.id)
+            except Exception as e:
+                messages.error(request, f"Error while creating order: {e}")
+                return redirect('create_order')
+        else:
+            messages.error(request, "Form submission failed. Please try again.")
     else:
-        products = Product.objects.all()
-        customers = Customer.objects.all()
-        return render(
-            request,
-            "shop/create_order.html",
-            {"products": products, "customers": customers},
-        )
+        # Jeśli metoda GET, po prostu tworzymy pusty formularz
+        form = OrderForm()
+
+    return render(request, "shop/create_order.html", {"form": form, "cart": cart})
 
 
 def process_payment(request, order_id):
@@ -198,17 +182,25 @@ def checkout(request):
         
         customer = request.user.customer
 
+        # Tworzenie zamówienia
         order = Order.objects.create(customer=customer)
 
+        # Tworzenie pozycji zamówienia i zmniejszenie stanu magazynowego
         for item in cart.items.all():
+            # Tworzymy OrderItem dla każdego produktu w koszyku
             OrderItem.objects.create(
                 order=order, 
                 product=item.product, 
                 quantity=item.quantity
             )
-        
+
+            # Aktualizacja stanu magazynowego produktu
+            if not item.product.update_stock(item.quantity):
+                return HttpResponse(f"Not enough stock for {item.product.name}.", status=400)
+
+        # Usuwanie pozycji z koszyka po utworzeniu zamówienia
         cart.items.all().delete()
-        
+
         return redirect('order_detail', pk=order.id)
 
     return render(request, 'shop/checkout.html', {'cart': cart})

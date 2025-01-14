@@ -35,13 +35,22 @@ class OrderForm(forms.ModelForm):
         fields = ["customer", "paid"]
 
     def save_order(self, cart, customer):
+        # Tworzymy zamówienie (nie zapisujemy jeszcze w bazie)
         order = self.save(commit=False)
         order.customer = customer
-        order.save()
+        order.save()  # Zapisujemy zamówienie
+
+        # Tworzymy pozycje w zamówieniu dla każdego przedmiotu w koszyku
         for cart_item in cart.items.all():
             OrderItem.objects.create(
-                order=order, product=cart_item.product, quantity=cart_item.quantity
+                order=order, 
+                product=cart_item.product, 
+                quantity=cart_item.quantity
             )
+        
+        # Opcjonalnie: Usuń elementy z koszyka po złożeniu zamówienia
+        cart.items.all().delete()
+
         return order
 
 
